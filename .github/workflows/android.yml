@@ -1,0 +1,212 @@
+# TouchTrace — Android CI/CD
+#
+# Jobs:
+#   test          → runs unit tests on every push / PR
+#   build-debug   → assembles a debug APK after tests pass
+#   build-release → assembles a (signed) release APK on main/master only
+#
+# Required secrets for signed releases (Settings → Secrets → Actions):
+#   ANDROID_KEYSTORE_BASE64    base64-encoded .jks / .keystore file
+#   ANDROID_KEYSTORE_PASSWORD  store password
+#   ANDROID_KEY_ALIAS          key alias inside the store
+#   ANDROID_KEY_PASSWORD       key password
+
+name: Android CI
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master ]
+
+# Cancel in-progress runs for the same branch when a new push arrives
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Disable Gradle daemon — ephemeral CI runners don't benefit from it
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2"
+  JAVA_TOOL_OPTIONS: "-Xmx4g"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Reusable setup steps, expressed as a composite action inline via defaults.
+# Each job repeats the three setup steps (checkout / JDK / SDK / Gradle);
+# this avoids a separate "setup" job that would add latency with no cache benefit.
+# ─────────────────────────────────────────────────────────────────────────────
+
+jobs:
+
+  # ── Unit Tests ──────────────────────────────────────────────────────────────
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Accept Android SDK licences & install components
+        run: |
+          # ubuntu-latest already ships SDK + cmdline-tools/latest
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses \
+            > /dev/null 2>&1 || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            "platforms;android-34" \
+            "build-tools;34.0.0" \
+            > /dev/null
+
+      - name: Set up Gradle 8.7
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.7'
+          # Only write the cache on main/master; PRs read from it
+          cache-read-only: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master' }}
+
+      - name: Run unit tests
+        run: gradle testDebugUnitTest
+
+      - name: Upload test report
+        if: always()          # upload even when tests fail
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-report-${{ github.sha }}
+          path: app/build/reports/tests/testDebugUnitTest/
+          retention-days: 14
+
+      - name: Upload JUnit XML (for PR annotations)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-xml-${{ github.sha }}
+          path: app/build/test-results/testDebugUnitTest/TEST-*.xml
+          retention-days: 7
+
+  # ── Debug Build ─────────────────────────────────────────────────────────────
+  build-debug:
+    name: Build Debug APK
+    runs-on: ubuntu-latest
+    needs: test           # only build if tests pass
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Accept Android SDK licences & install components
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses \
+            > /dev/null 2>&1 || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            "platforms;android-34" \
+            "build-tools;34.0.0" \
+            > /dev/null
+
+      - name: Set up Gradle 8.7
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.7'
+          cache-read-only: true
+
+      - name: Assemble debug APK
+        run: gradle assembleDebug
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: TouchTrace-debug-${{ github.sha }}
+          path: app/build/outputs/apk/debug/*.apk
+          retention-days: 14
+
+      # Print APK size to the job summary for quick visibility
+      - name: Report APK size
+        run: |
+          APK=$(ls app/build/outputs/apk/debug/*.apk | head -1)
+          SIZE=$(du -sh "$APK" | cut -f1)
+          echo "### Debug APK" >> $GITHUB_STEP_SUMMARY
+          echo "| File | Size |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|------|" >> $GITHUB_STEP_SUMMARY
+          echo "| \`$(basename $APK)\` | $SIZE |" >> $GITHUB_STEP_SUMMARY
+
+  # ── Release Build ───────────────────────────────────────────────────────────
+  build-release:
+    name: Build Release APK
+    runs-on: ubuntu-latest
+    needs: test
+    # Only run on pushes to the main branch (not PRs, not other branches)
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Accept Android SDK licences & install components
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses \
+            > /dev/null 2>&1 || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            "platforms;android-34" \
+            "build-tools;34.0.0" \
+            > /dev/null
+
+      - name: Set up Gradle 8.7
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.7'
+          cache-read-only: true
+
+      - name: Decode release keystore
+        # Runs only when the secret is present; without it the build still
+        # succeeds and produces an unsigned release APK (see app/build.gradle).
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$GITHUB_WORKSPACE/release.keystore"
+            echo "Keystore decoded successfully."
+          else
+            echo "No keystore secret found — building unsigned release APK."
+          fi
+
+      - name: Assemble release APK
+        env:
+          ANDROID_KEYSTORE_FILE: ${{ github.workspace }}/release.keystore
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: gradle assembleRelease
+
+      - name: Upload release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: TouchTrace-release-${{ github.sha }}
+          path: app/build/outputs/apk/release/*.apk
+          # Keep release builds longer than debug builds
+          retention-days: 90
+
+      - name: Report release APK size
+        run: |
+          APK=$(ls app/build/outputs/apk/release/*.apk | head -1)
+          SIZE=$(du -sh "$APK" | cut -f1)
+          SIGNED=$( [[ -f "$GITHUB_WORKSPACE/release.keystore" ]] && echo "Signed ✓" || echo "Unsigned (no keystore)" )
+          echo "### Release APK" >> $GITHUB_STEP_SUMMARY
+          echo "| File | Size | Signing |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|------|---------|" >> $GITHUB_STEP_SUMMARY
+          echo "| \`$(basename $APK)\` | $SIZE | $SIGNED |" >> $GITHUB_STEP_SUMMARY

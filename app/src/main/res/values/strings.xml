@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">TOUCHTRACE</string>
+    <string name="hint_touch">TOUCH ANYWHERE TO BEGIN</string>
+    <string name="hint_sub">Each gesture saved as a separate JSON file</string>
+    <string name="label_rec">REC</string>
+    <string name="label_gestures">GESTURES</string>
+    <string name="label_last">LAST GESTURE</string>
+    <string name="btn_files">FILES</string>
+    <string name="btn_stats">STATS</string>
+    <string name="btn_export">EXPORT ALL FILES</string>
+    <string name="btn_export_working">ZIPPING…</string>
+    <string name="toast_no_gestures">No gestures recorded yet</string>
+    <string name="toast_consent_denied">Consent required — no data is collected.</string>
+</resources>

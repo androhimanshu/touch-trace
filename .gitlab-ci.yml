@@ -1,0 +1,65 @@
+# Build TouchTrace with GitLab CI using a Gradle Docker image.
+# This avoids needing the committed Gradle wrapper jar (see WRAPPER.md).
+# CI runs once instance runners are enabled for the project.
+
+stages:
+  - test
+  - build
+
+default:
+  image: gradle:8.7-jdk17
+  before_script:
+    # Accept Android SDK licenses and install required SDK packages.
+    - apt-get update -y -qq && apt-get install -y -qq unzip wget > /dev/null
+    - export ANDROID_SDK_ROOT=/opt/android-sdk
+    - mkdir -p "$ANDROID_SDK_ROOT/cmdline-tools"
+    - wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O /tmp/tools.zip
+    - unzip -q /tmp/tools.zip -d "$ANDROID_SDK_ROOT/cmdline-tools"
+    - mv "$ANDROID_SDK_ROOT/cmdline-tools/cmdline-tools" "$ANDROID_SDK_ROOT/cmdline-tools/latest"
+    - export PATH="$PATH:$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$ANDROID_SDK_ROOT/platform-tools"
+    - yes | sdkmanager --licenses > /dev/null || true
+    - sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" > /dev/null
+
+cache:
+  key: "$CI_COMMIT_REF_SLUG"
+  paths:
+    - .gradle/
+    - build/
+
+unit_tests:
+  stage: test
+  script:
+    - gradle --no-daemon testDebugUnitTest
+  artifacts:
+    when: always
+    reports:
+      junit: app/build/test-results/testDebugUnitTest/TEST-*.xml
+    paths:
+      - app/build/reports/tests/
+    expire_in: 1 week
+
+assemble_debug:
+  stage: build
+  script:
+    - gradle --no-daemon assembleDebug
+  artifacts:
+    paths:
+      - app/build/outputs/apk/debug/*.apk
+    expire_in: 1 week
+
+assemble_release:
+  stage: build
+  script:
+    # If a base64 keystore is provided via CI variable, decode it and export
+    # the signing env vars consumed by app/build.gradle. Otherwise the build
+    # produces an unsigned release APK.
+    - |
+      if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
+        echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$CI_PROJECT_DIR/release.keystore"
+        export ANDROID_KEYSTORE_FILE="$CI_PROJECT_DIR/release.keystore"
+      fi
+    - gradle --no-daemon assembleRelease
+  artifacts:
+    paths:
+      - app/build/outputs/apk/release/*.apk
+    expire_in: 1 week

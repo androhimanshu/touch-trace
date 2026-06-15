@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_primary">
+
+    <com.touchtrace.app.ui.CaptureView
+        android:id="@+id/captureView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- Center hint — hidden after first gesture -->
+    <LinearLayout
+        android:id="@+id/hintLayout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:orientation="vertical"
+        android:gravity="center">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/hint_touch"
+            android:textColor="@color/accent_cyan"
+            android:textSize="13sp"
+            android:letterSpacing="0.25"
+            android:fontFamily="monospace"
+            android:alpha="0.75" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/hint_sub"
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp"
+            android:layout_marginTop="8dp"
+            android:gravity="center" />
+    </LinearLayout>
+
+    <!-- Top bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:layout_gravity="top"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:background="@drawable/gradient_top">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/app_name"
+            android:textColor="@color/text_primary"
+            android:textSize="17sp"
+            android:letterSpacing="0.3"
+            android:fontFamily="monospace"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="32dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="12dp"
+            android:paddingEnd="14dp"
+            android:background="@drawable/bg_rec_pill">
+
+            <View
+                android:id="@+id/recordingDot"
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:background="@drawable/shape_dot_orange"
+                android:layout_marginEnd="7dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/label_rec"
+                android:textColor="@color/accent_orange"
+                android:textSize="11sp"
+                android:letterSpacing="0.2"
+                android:fontFamily="monospace"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Bottom panel -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:orientation="vertical"
+        android:background="@drawable/gradient_bottom">
+
+        <!-- Stats row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingTop="24dp"
+            android:paddingBottom="16dp"
+            android:paddingStart="24dp"
+            android:paddingEnd="24dp">
+
+            <!-- Gesture count -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/label_gestures"
+                    android:textColor="@color/accent_cyan"
+                    android:textSize="10sp"
+                    android:letterSpacing="0.2"
+                    android:fontFamily="monospace"
+                    android:textAllCaps="true" />
+
+                <TextView
+                    android:id="@+id/tvGestureCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0"
+                    android:textColor="@color/text_primary"
+                    android:textSize="48sp"
+                    android:textStyle="bold"
+                    android:fontFamily="monospace"
+                    android:includeFontPadding="false"
+                    android:lineSpacingMultiplier="0.85" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="match_parent"
+                android:background="@color/divider"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp" />
+
+            <!-- Last gesture -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1.7"
+                android:orientation="vertical"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/label_last"
+                    android:textColor="@color/accent_cyan"
+                    android:textSize="10sp"
+                    android:letterSpacing="0.2"
+                    android:fontFamily="monospace"
+                    android:textAllCaps="true" />
+
+                <TextView
+                    android:id="@+id/tvLastGesture"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="—"
+                    android:textColor="@color/text_primary"
+                    android:textSize="22sp"
+                    android:textStyle="bold"
+                    android:fontFamily="monospace"
+                    android:layout_marginTop="4dp" />
+
+                <TextView
+                    android:id="@+id/tvFileIndex"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=""
+                    android:textColor="@color/accent_cyan"
+                    android:textSize="11sp"
+                    android:fontFamily="monospace"
+                    android:alpha="0.7"
+                    android:layout_marginTop="3dp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Navigation buttons: FILES | STATS -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:orientation="horizontal"
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:paddingBottom="8dp">
+
+            <TextView
+                android:id="@+id/btnFiles"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:layout_marginEnd="6dp"
+                android:gravity="center"
+                android:text="@string/btn_files"
+                android:textColor="@color/accent_cyan"
+                android:textSize="12sp"
+                android:letterSpacing="0.15"
+                android:fontFamily="monospace"
+                android:textStyle="bold"
+                android:background="@drawable/bg_btn_outline"
+                android:clickable="true"
+                android:focusable="true" />
+
+            <TextView
+                android:id="@+id/btnStats"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:layout_marginStart="6dp"
+                android:gravity="center"
+                android:text="@string/btn_stats"
+                android:textColor="@color/accent_cyan"
+                android:textSize="12sp"
+                android:letterSpacing="0.15"
+                android:fontFamily="monospace"
+                android:textStyle="bold"
+                android:background="@drawable/bg_btn_outline"
+                android:clickable="true"
+                android:focusable="true" />
+        </LinearLayout>
+
+        <!-- Export all button -->
+        <TextView
+            android:id="@+id/btnExport"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:layout_marginStart="20dp"
+            android:layout_marginEnd="20dp"
+            android:layout_marginBottom="24dp"
+            android:gravity="center"
+            android:text="@string/btn_export"
+            android:textColor="@color/btn_export_text"
+            android:textSize="13sp"
+            android:letterSpacing="0.2"
+            android:fontFamily="monospace"
+            android:textStyle="bold"
+            android:background="@drawable/bg_btn_export"
+            android:clickable="true"
+            android:focusable="true" />
+
+    </LinearLayout>
+
+</FrameLayout>

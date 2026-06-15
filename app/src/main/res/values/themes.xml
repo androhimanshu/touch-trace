@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Base theme: API 24-26.
+        android:windowLightNavigationBar requires API 27 so it lives in
+        values-v27/themes.xml. Everything here is safe down to minSdk 24.
+    -->
+    <style name="Theme.TouchTrace" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">@color/accent_cyan</item>
+        <item name="colorOnPrimary">@color/bg_primary</item>
+        <item name="colorSurface">@color/bg_surface</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        <item name="android:windowBackground">@color/bg_primary</item>
+        <item name="android:statusBarColor">@color/bg_primary</item>
+        <item name="android:navigationBarColor">@color/bg_surface</item>
+        <!-- windowLightStatusBar: API 23 — safe because minSdk 24 -->
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>

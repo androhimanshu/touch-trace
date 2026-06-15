@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg_primary">#080A0E</color>
+    <color name="bg_surface">#111520</color>
+    <color name="bg_surface_alpha">#CC111520</color>
+    <color name="accent_cyan">#00D4FF</color>
+    <color name="accent_cyan_dim">#3300D4FF</color>
+    <color name="accent_orange">#FF6B35</color>
+    <color name="text_primary">#E8EAED</color>
+    <color name="text_secondary">#6B7280</color>
+    <color name="divider">#1A2035</color>
+    <color name="btn_export_bg">#00D4FF</color>
+    <color name="btn_export_text">#080A0E</color>
+</resources>

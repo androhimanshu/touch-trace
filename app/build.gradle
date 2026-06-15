@@ -1,0 +1,63 @@
+plugins { id 'com.android.application' }
+
+// Load signing material from a local keystore.properties file (gitignored)
+// or from environment variables (CI). Never commit signing secrets.
+def keystorePropsFile = rootProject.file("keystore.properties")
+def keystoreProps = new Properties()
+if (keystorePropsFile.exists()) {
+    keystoreProps.load(new FileInputStream(keystorePropsFile))
+}
+
+def storeFilePath = keystoreProps.getProperty("storeFile") ?: System.getenv("ANDROID_KEYSTORE_FILE")
+def storePass     = keystoreProps.getProperty("storePassword") ?: System.getenv("ANDROID_KEYSTORE_PASSWORD")
+def keyAliasName  = keystoreProps.getProperty("keyAlias") ?: System.getenv("ANDROID_KEY_ALIAS")
+def keyPass       = keystoreProps.getProperty("keyPassword") ?: System.getenv("ANDROID_KEY_PASSWORD")
+def hasSigning    = storeFilePath != null && file(storeFilePath).exists()
+
+android {
+    namespace 'com.touchtrace.app'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.touchtrace.app"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "1.0.0"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+    signingConfigs {
+        release {
+            if (hasSigning) {
+                storeFile file(storeFilePath)
+                storePassword storePass
+                keyAlias keyAliasName
+                keyPassword keyPass
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'),
+                    'proguard-rules.pro'
+            // Sign only when keystore material is available; otherwise the
+            // build still succeeds and produces an unsigned release APK.
+            if (hasSigning) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'com.google.android.material:material:1.12.0'
+    implementation 'androidx.lifecycle:lifecycle-process:2.8.3'
+    testImplementation 'junit:junit:4.13.2'
+}
